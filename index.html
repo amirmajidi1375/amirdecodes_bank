@@ -3,104 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>بانک ایده‌های amirdecodes</title>
+<title>بانک ایده‌ها</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#1a1a2e; --bg2:#12121f; --card:#23233d; --card2:#2a2a47;
-    --teal:#2dd4bf; --orange:#f59e0b; --text:#f2f2f7; --muted:#a7a7c4; --line:#34345a;
+    --bg:#f7f7f5; --card:#ffffff; --text:#22242a; --muted:#8a8f98;
+    --line:#e8e8e3; --chip:#f0f0ec; --accent:#0d9488;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  body{margin:0; font-family:'Vazirmatn',Tahoma,sans-serif; background:linear-gradient(180deg,var(--bg),var(--bg2)); color:var(--text); padding:0 10px 40px; min-height:100vh}
+  body{margin:0; font-family:'Vazirmatn',Tahoma,sans-serif; background:var(--bg); color:var(--text); padding:0 14px 48px; min-height:100vh}
 
   /* نوار بالای باریک و چسبان: فقط عنوان + شمارنده + دکمهٔ فیلترها */
-  .topbar{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:8px;
-    background:rgba(18,18,31,.96); backdrop-filter:blur(8px);
-    margin:0 -10px; padding:8px 12px; border-bottom:1px solid var(--line)}
-  .topbar .ttl{font-size:14.5px; font-weight:900; white-space:nowrap}
-  .topbar .ttl .lock{color:var(--teal)}
+  .topbar{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
+    margin:0 -14px; padding:10px 14px; border-bottom:1px solid var(--line)}
+  .topbar .ttl{font-size:15px; font-weight:900; white-space:nowrap}
   .topbar .cnt{color:var(--muted); font-size:12px; white-space:nowrap}
-  .topbar .cnt b{color:var(--orange); font-weight:700}
+  .topbar .cnt b{color:var(--text); font-weight:700}
   #filterToggle{margin-inline-start:auto; display:flex; align-items:center; gap:6px;
-    background:var(--card); border:1.5px solid var(--teal); color:var(--teal);
-    border-radius:999px; padding:6px 14px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer}
-  #filterToggle .fbadge{background:var(--orange); color:#2a1a00; border-radius:999px; font-size:11px; font-weight:900; padding:0 7px; display:none}
-  #filterToggle .chev{transition:transform .2s}
+    background:#fff; border:1px solid var(--line); color:var(--text);
+    border-radius:999px; padding:6px 14px; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer}
+  #filterToggle .fbadge{background:var(--accent); color:#fff; border-radius:999px; font-size:11px; font-weight:700; padding:0 7px; display:none}
+  #filterToggle .chev{transition:transform .2s; color:var(--muted)}
   #filterToggle.open .chev{transform:rotate(180deg)}
 
   /* پنل فیلترها: پیش‌فرض بسته، در جریان صفحه (نه چسبان) */
-  .filters{background:rgba(18,18,31,.6); border:1px solid var(--line); border-radius:14px; padding:10px; margin:10px 0 2px}
+  .filters{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:12px 0 2px}
   .filters[hidden]{display:none}
-  .flabel{font-size:11px; color:var(--muted); margin:8px 0 5px}
+  .flabel{font-size:11px; color:var(--muted); margin:10px 0 6px}
   .flabel:first-child{margin-top:0}
   .chips{display:flex; gap:6px; flex-wrap:wrap}
-  .chip{border:1.5px solid var(--line); background:var(--card); color:var(--muted); border-radius:999px; padding:5px 12px; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer}
-  .chip.on{border-color:var(--teal); color:#0d2b27; background:var(--teal)}
-  .chip.fchip.on{border-color:var(--orange); background:var(--orange); color:#2a1a00}
-  .frow{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  .frow label{flex:1 1 30%; min-width:96px; font-size:11px; color:var(--muted); display:flex; flex-direction:column; gap:4px}
-  .frow select,.frow input{background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:7px; font-family:inherit; font-size:13px; width:100%}
+  .chip{border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:5px 13px; font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer}
+  .chip.on{border-color:var(--accent); background:var(--accent); color:#fff; font-weight:700}
+  .frow{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+  .frow label{flex:1 1 30%; min-width:100px; font-size:11px; color:var(--muted); display:flex; flex-direction:column; gap:4px}
+  .frow select,.frow input{background:#fff; border:1px solid var(--line); color:var(--text); border-radius:10px; padding:7px; font-family:inherit; font-size:13px; width:100%}
   .frow input[type="date"]{direction:ltr; text-align:left}
-  #resetBtn{margin-top:10px; width:100%; background:transparent; border:1px dashed var(--line); color:var(--muted); border-radius:10px; padding:6px; font-family:inherit; font-size:12.5px; cursor:pointer}
+  #resetBtn{margin-top:12px; width:100%; background:transparent; border:1px dashed var(--line); color:var(--muted); border-radius:10px; padding:7px; font-family:inherit; font-size:12.5px; cursor:pointer}
 
-  section.cat{margin-top:16px}
-  .cathead{display:flex; align-items:center; gap:8px; margin-bottom:3px}
-  .catbadge{width:29px; height:29px; border-radius:9px; background:var(--teal); color:#0d2b27; font-weight:900; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none}
-  .cathead h2{margin:0; font-size:15px; font-weight:900}
-  .cathead .n{color:var(--muted); font-size:11.5px; font-weight:400}
-  .blurb{color:var(--muted); font-size:11.5px; margin:1px 0 8px; line-height:1.7}
+  section.bucket{margin-top:22px}
+  .buckethead{display:flex; align-items:baseline; gap:8px; margin-bottom:2px}
+  .buckethead h2{margin:0; font-size:16px; font-weight:900}
+  .buckethead .n{color:var(--muted); font-size:12px; font-weight:400}
+  .blurb{color:var(--muted); font-size:12px; margin:1px 0 10px; line-height:1.8}
 
-  .grid{display:grid; grid-template-columns:1fr; gap:9px}
+  .grid{display:grid; grid-template-columns:1fr; gap:10px}
   @media (min-width:720px){ .grid{grid-template-columns:repeat(2,1fr)} }
   @media (min-width:1080px){ .grid{grid-template-columns:repeat(3,1fr)} }
 
-  .card{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:9px 11px; display:flex; flex-direction:column}
-  .card .row1{display:flex; align-items:center; gap:5px; flex-wrap:wrap}
-  .code{background:var(--card2); border:1px solid var(--line); color:var(--teal); font-weight:900; font-size:11.5px; border-radius:7px; padding:1px 7px}
-  .rank{background:var(--card2); border:1px solid var(--line); color:var(--orange); font-weight:700; font-size:11px; border-radius:7px; padding:1px 7px}
-  .fit{font-weight:900; font-size:11px; border-radius:7px; padding:1px 8px}
-  .fit-ad{background:var(--teal); color:#0d2b27}
-  .fit-sd{background:var(--orange); color:#2a1a00}
-  .fit-both{background:linear-gradient(90deg,var(--teal),var(--orange)); color:#1a1a2e}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:flex; flex-direction:column}
+  .card .row1{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .code{background:var(--chip); color:var(--muted); font-weight:700; font-size:11.5px; border-radius:6px; padding:1px 7px}
+  .rank{color:var(--muted); font-weight:500; font-size:11.5px}
+  .rank b{color:var(--text); font-weight:700}
   .kind{color:var(--muted); font-size:11px; margin-inline-start:auto}
-  .card h3{margin:6px 0 2px; font-size:14px; font-weight:700; line-height:1.6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
-  .sub{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:2px 0 4px}
-  .creator{color:var(--teal); font-size:12px; direction:ltr; unicode-bidi:isolate}
+  .card h3{margin:8px 0 3px; font-size:14.5px; font-weight:700; line-height:1.7; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .sub{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:2px 0 5px}
+  .creator{color:var(--accent); font-size:12px; direction:ltr; unicode-bidi:isolate}
   .stats{display:flex; gap:10px; color:var(--muted); font-size:12px}
   .stats b{color:var(--text); font-weight:700}
-  .summary{font-size:12.5px; line-height:1.8; color:#d9d9e8; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .summary{font-size:12.5px; line-height:1.9; color:#4a4d55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
   .card.open .summary{-webkit-line-clamp:unset}
-  .more{color:var(--teal); font-size:11.5px; cursor:pointer; user-select:none; align-self:flex-start; margin-top:2px}
-  .caption{font-size:11.5px; color:var(--muted); border-inline-start:3px solid var(--orange); padding:1px 8px; margin:6px 0 0; line-height:1.7; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .more{color:var(--accent); font-size:11.5px; cursor:pointer; user-select:none; align-self:flex-start; margin-top:3px}
+  .caption{font-size:11.5px; color:var(--muted); border-inline-start:2px solid var(--line); padding:1px 8px; margin:8px 0 0; line-height:1.8; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
   .card.open .caption{-webkit-line-clamp:unset}
-  .tags{display:flex; gap:4px; flex-wrap:wrap; margin:6px 0 0}
-  .tag{background:var(--card2); color:var(--muted); font-size:10.5px; border-radius:999px; padding:1px 8px}
-  .meta{color:var(--muted); font-size:11px; margin-top:6px}
-  .openbtn{display:block; text-align:center; margin-top:8px; background:var(--teal); color:#0d2b27; font-weight:900; font-size:12.5px; border-radius:9px; padding:7px; text-decoration:none}
-  .empty{text-align:center; color:var(--muted); padding:40px 10px; font-size:14px; line-height:2}
-  footer.note{text-align:center; color:var(--muted); font-size:11px; margin-top:22px; line-height:1.9}
+  .tags{display:flex; gap:4px; flex-wrap:wrap; margin:8px 0 0}
+  .tag{background:var(--chip); color:var(--muted); font-size:10.5px; border-radius:999px; padding:1px 8px}
+  .meta{color:var(--muted); font-size:11px; margin-top:8px}
+  .openbtn{display:block; text-align:center; margin-top:10px; background:#fff; border:1px solid var(--line); color:var(--accent); font-weight:700; font-size:12.5px; border-radius:9px; padding:7px; text-decoration:none}
+  .empty{text-align:center; color:var(--muted); padding:44px 10px; font-size:14px; line-height:2}
+  footer.note{text-align:center; color:var(--muted); font-size:11px; margin-top:26px; line-height:1.9}
   .loading{text-align:center; color:var(--muted); padding:50px 0}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <span class="ttl">بانک ایده <span class="lock">🔓</span></span>
+  <span class="ttl">بانک ایده 🔓</span>
   <span class="cnt" id="liveCount">…</span>
   <button id="filterToggle" aria-expanded="false">فیلترها <span class="fbadge" id="activeBadge"></span><span class="chev">▾</span></button>
 </div>
 
 <div class="filters" id="filters" hidden>
-  <div class="flabel">پیج مناسب</div>
-  <div class="chips" id="fitChips">
-    <button class="chip fchip on" data-fit="">همه</button>
-    <button class="chip fchip" data-fit="amirdecodes">AmirDecodes</button>
-    <button class="chip fchip" data-fit="shode.dige">شده دیگه</button>
-    <button class="chip fchip" data-fit="هر دو">هر دو</button>
+  <div class="flabel">پیج</div>
+  <div class="chips" id="bucketChips">
+    <button class="chip on" data-bucket="">همه</button>
+    <button class="chip" data-bucket="amirdecodes">AmirDecodes</button>
+    <button class="chip" data-bucket="shode.dige">Shode.dige</button>
+    <button class="chip" data-bucket="undecided">نامشخص</button>
   </div>
-  <div class="flabel">دسته‌ها</div>
-  <div class="chips" id="catChips"></div>
   <div class="frow">
     <label>مرتب‌سازی وایرال
       <select id="sortSel">
@@ -129,27 +121,19 @@
 </div>
 
 <main id="app"><div class="loading">…</div></main>
-<footer class="note">قاعدهٔ بانک: مکانیزم هر ایده استخراج می‌شود؛ سطح و متنش کپی نمی‌شود.<br>وضعیت همهٔ آیتم‌ها: دسته‌بندی‌شده — منتظر تحلیل عمیق</footer>
+<footer class="note">قاعدهٔ بانک: مکانیزم هر ایده استخراج می‌شود؛ سطح و متنش کپی نمی‌شود.<br>بخش «نامشخص» منتظر تعیین پیج با دست است.</footer>
 
 <script>
 const tg = window.Telegram && Telegram.WebApp ? Telegram.WebApp : null;
 if (tg) {
-  try { tg.ready(); tg.expand(); tg.setHeaderColor('#1a1a2e'); tg.setBackgroundColor('#1a1a2e'); } catch(e) {}
+  try { tg.ready(); tg.expand(); tg.setHeaderColor('#ffffff'); tg.setBackgroundColor('#f7f7f5'); } catch(e) {}
 }
 const faNum = n => Number(n).toLocaleString('fa-IR');
-const ALL_CATS = ['A','B','C','D','E'];
-const state = { cats: new Set(ALL_CATS), fit: '', sort: 'desc', minLikes: 0, sender: '', from: '', to: '' };
+const state = { bucket: '', sort: 'desc', minLikes: 0, sender: '', from: '', to: '' };
 let DATA = null;
 
-const FIT_UI = {
-  'amirdecodes': { cls: 'fit-ad', label: 'AmirDecodes' },
-  'shode.dige':  { cls: 'fit-sd', label: 'شده دیگه' },
-  'هر دو':       { cls: 'fit-both', label: 'هر دو پیج' }
-};
-
 function passFilters(it) {
-  if (!state.cats.has(it.category)) return false;
-  if (state.fit && it.fit !== state.fit) return false;
+  if (state.bucket && it.bucket !== state.bucket) return false;
   if (state.minLikes && it.likes < state.minLikes) return false;
   if (state.sender && it.sender !== state.sender) return false;
   const d = (it.sent_iso || '').slice(0, 10);
@@ -160,8 +144,7 @@ function passFilters(it) {
 
 function activeCount() {
   let n = 0;
-  if (state.fit) n++;
-  if (state.cats.size < ALL_CATS.length) n++;
+  if (state.bucket) n++;
   if (state.sort !== 'desc') n++;
   if (state.minLikes) n++;
   if (state.sender) n++;
@@ -172,12 +155,10 @@ function activeCount() {
 function cardHTML(it) {
   const tags = it.tags.map(t => `<span class="tag">#${t}</span>`).join('');
   const cap = it.caption ? `<div class="caption">${it.caption}</div>` : '';
-  const f = FIT_UI[it.fit] || FIT_UI['هر دو'];
   return `<article class="card" data-code="${it.code}">
     <div class="row1">
       <span class="code">${it.code}</span>
-      <span class="rank">رتبه ${faNum(it.rank)}</span>
-      <span class="fit ${f.cls}">${f.label}</span>
+      <span class="rank">رتبهٔ کلی <b>${faNum(it.rank)}</b></span>
       <span class="kind">${it.kind === 'post' ? 'پست' : 'ریلز'}</span>
     </div>
     <h3>${it.title}</h3>
@@ -209,13 +190,13 @@ function render() {
     return;
   }
   let html = '';
-  for (const cat of DATA.categories) {
-    const inCat = items.filter(i => i.category === cat.letter);
-    if (!inCat.length) continue;
-    html += `<section class="cat"><div class="cathead"><div class="catbadge">${cat.letter}</div>` +
-      `<h2>${cat.name} <span class="n">(${faNum(inCat.length)} ایده)</span></h2></div>` +
-      (cat.blurb ? `<p class="blurb">${cat.blurb}</p>` : '') +
-      `<div class="grid">` + inCat.map(cardHTML).join('') + `</div></section>`;
+  for (const b of DATA.buckets) {
+    const inBucket = items.filter(i => i.bucket === b.key);
+    if (!inBucket.length) continue;
+    html += `<section class="bucket"><div class="buckethead">` +
+      `<h2>${b.name}</h2><span class="n">${faNum(inBucket.length)} ایده</span></div>` +
+      (b.blurb ? `<p class="blurb">${b.blurb}</p>` : '') +
+      `<div class="grid">` + inBucket.map(cardHTML).join('') + `</div></section>`;
   }
   app.innerHTML = html;
   app.querySelectorAll('.card .more').forEach(el => {
@@ -232,28 +213,6 @@ function render() {
   });
 }
 
-function buildChips() {
-  const wrap = document.getElementById('catChips');
-  wrap.innerHTML = DATA.categories.map(c =>
-    `<button class="chip on" data-cat="${c.letter}">${c.letter} — ${c.name}</button>`).join('');
-  wrap.querySelectorAll('.chip').forEach(ch => {
-    ch.addEventListener('click', () => {
-      const c = ch.dataset.cat;
-      if (state.cats.has(c)) { state.cats.delete(c); ch.classList.remove('on'); }
-      else { state.cats.add(c); ch.classList.add('on'); }
-      render();
-    });
-  });
-  document.querySelectorAll('#fitChips .fchip').forEach(ch => {
-    ch.addEventListener('click', () => {
-      document.querySelectorAll('#fitChips .fchip').forEach(x => x.classList.remove('on'));
-      ch.classList.add('on');
-      state.fit = ch.dataset.fit;
-      render();
-    });
-  });
-}
-
 function bindFilters() {
   const panel = document.getElementById('filters');
   const toggle = document.getElementById('filterToggle');
@@ -263,20 +222,27 @@ function bindFilters() {
     toggle.classList.toggle('open', open);
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
+  document.querySelectorAll('#bucketChips .chip').forEach(ch => {
+    ch.addEventListener('click', () => {
+      document.querySelectorAll('#bucketChips .chip').forEach(x => x.classList.remove('on'));
+      ch.classList.add('on');
+      state.bucket = ch.dataset.bucket;
+      render();
+    });
+  });
   document.getElementById('sortSel').addEventListener('change', e => { state.sort = e.target.value; render(); });
   document.getElementById('minLikes').addEventListener('input', e => { state.minLikes = parseInt(e.target.value, 10) || 0; render(); });
   document.getElementById('senderSel').addEventListener('change', e => { state.sender = e.target.value; render(); });
   document.getElementById('dateFrom').addEventListener('change', e => { state.from = e.target.value; render(); });
   document.getElementById('dateTo').addEventListener('change', e => { state.to = e.target.value; render(); });
   document.getElementById('resetBtn').addEventListener('click', () => {
-    state.cats = new Set(ALL_CATS); state.fit = ''; state.sort = 'desc'; state.minLikes = 0; state.sender = ''; state.from = ''; state.to = '';
+    state.bucket = ''; state.sort = 'desc'; state.minLikes = 0; state.sender = ''; state.from = ''; state.to = '';
     document.getElementById('sortSel').value = 'desc';
     document.getElementById('minLikes').value = '';
     document.getElementById('senderSel').value = '';
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
-    document.querySelectorAll('#catChips .chip').forEach(ch => ch.classList.add('on'));
-    document.querySelectorAll('#fitChips .fchip').forEach(x => x.classList.toggle('on', x.dataset.fit === ''));
+    document.querySelectorAll('#bucketChips .chip').forEach(x => x.classList.toggle('on', x.dataset.bucket === ''));
     render();
   });
 }
@@ -286,7 +252,7 @@ fetch('data.json?t=' + Date.now(), { cache: 'no-store' })
   .then(d => {
     if (!d) { document.getElementById('app').innerHTML = '<div class="empty">خطا در بارگذاری بانک ⚠️</div>'; return; }
     DATA = d;
-    buildChips(); bindFilters(); render();
+    bindFilters(); render();
   })
   .catch(() => { document.getElementById('app').innerHTML = '<div class="empty">خطا در بارگذاری بانک ⚠️</div>'; });
 </script>
