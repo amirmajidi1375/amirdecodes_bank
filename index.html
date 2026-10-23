@@ -86,6 +86,13 @@
   .selbtn{display:block; width:100%; margin-top:8px; background:var(--accent); border:1px solid var(--accent); color:#fff; font-weight:700; font-size:12.5px; border-radius:9px; padding:8px; font-family:inherit; cursor:pointer}
   .selbtn.on{background:#fff; color:var(--accent)}
   .selhint{color:var(--muted); font-size:11px; margin-top:6px; line-height:1.8}
+  .notice{display:none; margin-top:8px; background:#fef3c7; border:1px solid #f59e0b; color:#92400e; font-size:12px; line-height:1.9; border-radius:9px; padding:8px 10px}
+  .notice.show{display:block}
+  .notice.always{display:block}
+  .dropbtn{display:block; width:100%; margin-top:6px; background:#fff; border:1px solid var(--line); color:var(--muted); font-weight:500; font-size:12.5px; border-radius:9px; padding:8px; font-family:inherit; cursor:pointer}
+  .mech{font-size:12.5px; line-height:1.9; color:#4a4d55; margin-top:6px}
+  .mech b{color:var(--accent)}
+  .forpage{display:inline-block; background:var(--chip); color:var(--text); font-size:11.5px; font-weight:700; border-radius:999px; padding:2px 10px; margin-top:8px}
   .prog{margin-top:10px; border-top:1px dashed var(--line); padding-top:9px}
   .prog .bar{display:flex; gap:3px}
   .prog .bar i{flex:1; height:5px; border-radius:99px; background:var(--chip)}
@@ -110,6 +117,7 @@
     <button data-bucket="shode.dige" class="on">شده دیگه</button>
     <button data-bucket="amirdecodes">AmirDecodes</button>
     <button data-bucket="undecided">نامشخص</button>
+    <button data-bucket="suggestions">پیشنهادات میوز</button>
   </div>
 </div>
 
@@ -152,7 +160,14 @@ if (tg) {
 const faNum = n => Number(n).toLocaleString('fa-IR');
 const state = { bucket: 'shode.dige', sort: 'desc', minLikes: 0, sender: '', from: '', to: '', view: 'all' };
 let DATA = null;
-const canSendData = !!(tg && typeof tg.sendData === 'function' && tg.initData);
+// sendData only actually delivers when the app was launched from the bot
+// (menu button in the private chat). A plain link / external browser has no
+// usable initData (platform 'unknown'), and an app opened any other way must
+// NOT fake a success: Amir hit exactly that false «ثبت شد» on 2026-10-23.
+const canSendData = !!(tg && typeof tg.sendData === 'function' && tg.initData &&
+                       tg.platform && tg.platform !== 'unknown');
+const SEND_NOTICE = 'انتخاب فقط وقتی ثبت می‌شه که بانک رو از دکمهٔ «بانک ایده» توی چت خصوصی بات باز کنی — از لینک مستقیم ثبت نمی‌شه.';
+const BUCKET_SUGGEST_FA = { 'AmirDecodes': 'AmirDecodes', 'Shode.dige': 'شده‌دیگه', 'نامشخص': 'نامشخص' };
 
 function passFilters(it) {
   if (it.bucket !== state.bucket) return false;
@@ -165,9 +180,15 @@ function passFilters(it) {
   return true;
 }
 
-function sendSelect(code, type) {
-  if (!canSendData) return;
-  try { tg.sendData(JSON.stringify({ type: type, code: code })); } catch (e) {}
+function sendPayload(obj) {
+  if (!canSendData) return false;
+  try { tg.sendData(JSON.stringify(obj)); return true; } catch (e) { return false; }
+}
+
+function showNotice(btn) {
+  const card = btn.closest('.card');
+  const n = card ? card.querySelector('.notice') : null;
+  if (n) { n.classList.add('show'); n.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
 
 function activeCount() {
@@ -204,7 +225,7 @@ function cardHTML(it) {
     sel = `<button class="selbtn" data-sel="${it.code}">🎬 ثبت انتخاب برای ساخت</button>`;
   }
   if (!canSendData) {
-    sel += `<div class="selhint">برای ثبت انتخاب، بانک رو از دکمهٔ «بانک ایده» توی چت خصوصی بات باز کن.</div>`;
+    sel += `<div class="notice">${SEND_NOTICE}</div>`;
   }
   return `<article class="card${selected ? ' selected' : ''}" data-code="${it.code}">
     ${thumb}
@@ -228,8 +249,59 @@ function cardHTML(it) {
   </article>`;
 }
 
+function candCardHTML(c) {
+  let thumb = '';
+  if (c.thumb && c.preview) {
+    thumb = `<div class="thumbwrap" data-preview="${c.preview}" data-cand="${c.id}"><img class="thumb" src="${c.thumb}" alt="" loading="lazy"><span class="playbadge">▶ پیش‌نمایش</span></div>`;
+  } else if (c.thumb) {
+    thumb = `<img class="thumb" src="${c.thumb}" alt="" loading="lazy">`;
+  }
+  const notice = canSendData ? '' : `<div class="notice">${SEND_NOTICE}</div>`;
+  return `<article class="card" data-cand="${c.id}">
+    ${thumb}
+    <div class="row1">
+      <span class="code">${c.id}</span>
+      <span class="kind">پیشنهاد میوز</span>
+    </div>
+    <h3>${c.title || ''}</h3>
+    <div class="sub">
+      <span class="creator">${c.creator || ''}</span>
+      <span class="stats"><span>❤️ <b>${faNum(c.likes || 0)}</b></span><span>💬 <b>${faNum(c.comments || 0)}</b></span></span>
+    </div>
+    <div class="mech"><b>چرا وایرال شد؟</b> ${c.mechanism_note || ''}</div>
+    <span class="forpage">برای پیج: ${BUCKET_SUGGEST_FA[c.bucket_suggestion] || c.bucket_suggestion || ''}</span>
+    <a class="openbtn" href="${c.url}" target="_blank" rel="noopener">تماشای کامل در اینستاگرام</a>
+    <button class="selbtn promotebtn" data-promote="${c.id}">✅ بیاد توی لیست اصلی</button>
+    <button class="dropbtn" data-drop="${c.id}">✕ نمی‌خوامش</button>
+    ${notice}
+  </article>`;
+}
+
+function renderSuggestions(app) {
+  const cands = DATA.suggestions || [];
+  document.getElementById('liveCount').innerHTML =
+    `<b>${faNum(cands.length)}</b> پیشنهاد`;
+  const badge = document.getElementById('activeBadge');
+  badge.style.display = 'none';
+  let html = `<section class="bucket"><div class="buckethead">` +
+    `<h2>پیشنهادات میوز</h2><span class="n">${faNum(cands.length)} ویدیو</span></div>` +
+    `<p class="blurb">ویدیوهای کاملاً وایرالی که میوز روزانه پیدا می‌کنه؛ اگه پسندیدی بفرستش توی لیست اصلی تا برای ساخت انتخاب بشه.</p>`;
+  if (!cands.length) {
+    html += '<div class="empty">فعلاً پیشنهادی نیست 🌱<br>میوز هر روز می‌گرده و ویدیوهای کاملاً وایرال رو اینجا می‌ذاره.</div>';
+  } else {
+    html += `<div class="grid">` + cands.map(candCardHTML).join('') + `</div>`;
+  }
+  html += `</section>`;
+  app.innerHTML = html;
+}
+
 function render() {
   const app = document.getElementById('app');
+  if (state.bucket === 'suggestions') {
+    renderSuggestions(app);
+    bindCardEvents(app);
+    return;
+  }
   let items = DATA.items.filter(passFilters);
   if (state.view === 'prod') {
     items.sort((a, b) => (a.stage - b.stage) || (a.rank - b.rank));
@@ -261,6 +333,10 @@ function render() {
   }
   html += `</section>`;
   app.innerHTML = html;
+  bindCardEvents(app);
+}
+
+function bindCardEvents(app) {
   app.querySelectorAll('.viewtoggle button').forEach(btn => {
     btn.addEventListener('click', () => { state.view = btn.dataset.view; render(); });
   });
@@ -278,10 +354,29 @@ function render() {
   });
   app.querySelectorAll('.selbtn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!canSendData) { showNotice(btn); return; }
       const code = btn.dataset.sel;
       const it = DATA.items.find(i => i.code === code);
       const type = it && it.stage !== undefined ? 'deselect' : 'select';
-      if (canSendData) { sendSelect(code, type); btn.textContent = 'ثبت شد ✓'; btn.disabled = true; }
+      if (sendPayload({ type: type, code: code })) { btn.textContent = 'ثبت شد ✓'; btn.disabled = true; }
+    });
+  });
+  app.querySelectorAll('.promotebtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!canSendData) { showNotice(btn); return; }
+      if (sendPayload({ type: 'promote', id: btn.dataset.promote })) {
+        btn.textContent = 'ثبت شد ✓'; btn.disabled = true;
+        const d = btn.closest('.card').querySelector('.dropbtn'); if (d) d.disabled = true;
+      }
+    });
+  });
+  app.querySelectorAll('.dropbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!canSendData) { showNotice(btn); return; }
+      if (sendPayload({ type: 'drop', id: btn.dataset.drop })) {
+        btn.textContent = 'ثبت شد ✓'; btn.disabled = true;
+        const p = btn.closest('.card').querySelector('.promotebtn'); if (p) p.disabled = true;
+      }
     });
   });
   app.querySelectorAll('.thumbwrap').forEach(w => {
@@ -290,7 +385,8 @@ function render() {
       w.dataset.loading = '1';
       const badge = w.querySelector('.playbadge');
       if (badge) badge.textContent = '… در حال بارگذاری';
-      const it = DATA.items.find(i => i.code === w.dataset.code);
+      const it = DATA.items.find(i => i.code === w.dataset.code) ||
+                 (DATA.suggestions || []).find(c => c.id === w.dataset.cand);
       fetch(w.dataset.preview, { cache: 'force-cache' })
         .then(r => r.ok ? r.text() : Promise.reject(new Error('fetch')))
         .then(b64 => {
