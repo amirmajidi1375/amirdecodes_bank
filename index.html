@@ -77,6 +77,21 @@
   .tag{background:var(--chip); color:var(--muted); font-size:10.5px; border-radius:999px; padding:1px 8px}
   .meta{color:var(--muted); font-size:11px; margin-top:8px}
   .openbtn{display:block; text-align:center; margin-top:10px; background:#fff; border:1px solid var(--line); color:var(--accent); font-weight:700; font-size:12.5px; border-radius:9px; padding:7px; text-decoration:none}
+  .thumb{display:block; width:100%; height:190px; object-fit:cover; object-position:center 22%; border-radius:9px; margin-bottom:10px; background:var(--chip)}
+  .card.selected{border-color:var(--accent)}
+  .selbtn{display:block; width:100%; margin-top:8px; background:var(--accent); border:1px solid var(--accent); color:#fff; font-weight:700; font-size:12.5px; border-radius:9px; padding:8px; font-family:inherit; cursor:pointer}
+  .selbtn.on{background:#fff; color:var(--accent)}
+  .selhint{color:var(--muted); font-size:11px; margin-top:6px; line-height:1.8}
+  .prog{margin-top:10px; border-top:1px dashed var(--line); padding-top:9px}
+  .prog .bar{display:flex; gap:3px}
+  .prog .bar i{flex:1; height:5px; border-radius:99px; background:var(--chip)}
+  .prog .bar i.done{background:var(--accent)}
+  .prog .lbl{font-size:11.5px; color:var(--text); margin-top:6px}
+  .prog .lbl b{color:var(--accent)}
+  .prog .route{font-size:11.5px; color:var(--muted); margin-top:2px}
+  .viewtoggle{display:flex; gap:6px; margin:0 0 12px}
+  .viewtoggle button{border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:5px 13px; font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer}
+  .viewtoggle button.on{border-color:var(--accent); background:var(--accent); color:#fff; font-weight:700}
   .empty{text-align:center; color:var(--muted); padding:44px 10px; font-size:14px; line-height:2}
   footer.note{text-align:center; color:var(--muted); font-size:11px; margin-top:26px; line-height:1.9}
   .loading{text-align:center; color:var(--muted); padding:50px 0}
@@ -131,17 +146,24 @@ if (tg) {
   try { tg.ready(); tg.expand(); tg.setHeaderColor('#ffffff'); tg.setBackgroundColor('#f7f7f5'); } catch(e) {}
 }
 const faNum = n => Number(n).toLocaleString('fa-IR');
-const state = { bucket: 'shode.dige', sort: 'desc', minLikes: 0, sender: '', from: '', to: '' };
+const state = { bucket: 'shode.dige', sort: 'desc', minLikes: 0, sender: '', from: '', to: '', view: 'all' };
 let DATA = null;
+const canSendData = !!(tg && typeof tg.sendData === 'function' && tg.initData);
 
 function passFilters(it) {
   if (it.bucket !== state.bucket) return false;
+  if (state.view === 'prod' && it.stage === undefined) return false;
   if (state.minLikes && it.likes < state.minLikes) return false;
   if (state.sender && it.sender !== state.sender) return false;
   const d = (it.sent_iso || '').slice(0, 10);
   if (state.from && d < state.from) return false;
   if (state.to && d > state.to) return false;
   return true;
+}
+
+function sendSelect(code, type) {
+  if (!canSendData) return;
+  try { tg.sendData(JSON.stringify({ type: type, code: code })); } catch (e) {}
 }
 
 function activeCount() {
@@ -156,7 +178,27 @@ function activeCount() {
 function cardHTML(it) {
   const tags = it.tags.map(t => `<span class="tag">#${t}</span>`).join('');
   const cap = it.caption ? `<div class="caption">${it.caption}</div>` : '';
-  return `<article class="card" data-code="${it.code}">
+  const thumb = it.thumb ? `<img class="thumb" src="${it.thumb}" alt="" loading="lazy">` : '';
+  const selected = it.stage !== undefined;
+  let sel = '';
+  if (selected) {
+    const stages = DATA.stages || [];
+    const bars = stages.map((s, i) => `<i class="${i <= it.stage ? 'done' : ''}"></i>`).join('');
+    sel = `<div class="prog">
+        <div class="bar">${bars}</div>
+        <div class="lbl">🎬 در دست ساخت — مرحلهٔ <b>${faNum(it.stage)}</b> از ${faNum(stages.length - 1)}: ${it.stage_label || ''}</div>
+        ${it.route ? `<div class="route">روش ساخت: ${it.route}</div>` : ''}
+        ${it.selected_by ? `<div class="route">انتخاب: ${it.selected_by}</div>` : ''}
+      </div>
+      <button class="selbtn on" data-sel="${it.code}">انتخاب شده ✓ — لغو</button>`;
+  } else {
+    sel = `<button class="selbtn" data-sel="${it.code}">🎬 ثبت انتخاب برای ساخت</button>`;
+  }
+  if (!canSendData) {
+    sel += `<div class="selhint">برای ثبت انتخاب، بانک رو از دکمهٔ «بانک ایده» توی چت خصوصی بات باز کن.</div>`;
+  }
+  return `<article class="card${selected ? ' selected' : ''}" data-code="${it.code}">
+    ${thumb}
     <div class="row1">
       <span class="code">${it.code}</span>
       <span class="rank">رتبهٔ کلی <b>${faNum(it.rank)}</b></span>
@@ -173,35 +215,46 @@ function cardHTML(it) {
     <div class="tags">${tags}</div>
     <div class="meta">📤 ${it.sender} — ${it.sent_display} • ${it.source}</div>
     <a class="openbtn" href="${it.url}" target="_blank" rel="noopener">دیدن در اینستاگرام</a>
+    ${sel}
   </article>`;
 }
 
 function render() {
   const app = document.getElementById('app');
-  const items = DATA.items.filter(passFilters);
-  items.sort((a, b) => state.sort === 'desc' ? b.likes - a.likes : a.likes - b.likes);
+  let items = DATA.items.filter(passFilters);
+  if (state.view === 'prod') {
+    items.sort((a, b) => (a.stage - b.stage) || (a.rank - b.rank));
+  } else {
+    items.sort((a, b) => state.sort === 'desc' ? b.likes - a.likes : a.likes - b.likes);
+  }
   const bucketTotal = DATA.items.filter(i => i.bucket === state.bucket).length;
+  const prodTotal = DATA.items.filter(i => i.bucket === state.bucket && i.stage !== undefined).length;
   document.getElementById('liveCount').innerHTML =
     `نمایش <b>${faNum(items.length)}</b> از ${faNum(bucketTotal)}`;
   const badge = document.getElementById('activeBadge');
   const ac = activeCount();
   badge.style.display = ac ? '' : 'none';
   badge.textContent = faNum(ac);
+  const b = DATA.buckets.find(x => x.key === state.bucket);
+  const toggle = `<div class="viewtoggle">
+      <button data-view="all" class="${state.view === 'all' ? 'on' : ''}">همهٔ این بخش</button>
+      <button data-view="prod" class="${state.view === 'prod' ? 'on' : ''}">در دست ساخت (${faNum(prodTotal)})</button>
+    </div>`;
+  let html = `<section class="bucket"><div class="buckethead">` +
+    `<h2>${b ? b.name : ''}</h2><span class="n">${faNum(bucketTotal)} ایده</span></div>` +
+    (b && b.blurb ? `<p class="blurb">${b.blurb}</p>` : '') + toggle;
   if (!items.length) {
-    app.innerHTML = '<div class="empty">با این فیلترها چیزی نیست 🤷<br>فیلترها رو کمتر کن.</div>';
-    return;
+    html += state.view === 'prod'
+      ? '<div class="empty">هنوز چیزی برای ساخت انتخاب نشده 🎬<br>از «همهٔ این بخش» یه ایده رو انتخاب کن.</div>'
+      : '<div class="empty">با این فیلترها چیزی نیست 🤷<br>فیلترها رو کمتر کن.</div>';
+  } else {
+    html += `<div class="grid">` + items.map(cardHTML).join('') + `</div>`;
   }
-  let html = '';
-  for (const b of DATA.buckets) {
-    if (b.key !== state.bucket) continue;
-    const inBucket = items.filter(i => i.bucket === b.key);
-    if (!inBucket.length) continue;
-    html += `<section class="bucket"><div class="buckethead">` +
-      `<h2>${b.name}</h2><span class="n">${faNum(inBucket.length)} ایده</span></div>` +
-      (b.blurb ? `<p class="blurb">${b.blurb}</p>` : '') +
-      `<div class="grid">` + inBucket.map(cardHTML).join('') + `</div></section>`;
-  }
+  html += `</section>`;
   app.innerHTML = html;
+  app.querySelectorAll('.viewtoggle button').forEach(btn => {
+    btn.addEventListener('click', () => { state.view = btn.dataset.view; render(); });
+  });
   app.querySelectorAll('.card .more').forEach(el => {
     el.addEventListener('click', () => {
       const card = el.closest('.card');
@@ -212,6 +265,14 @@ function render() {
   app.querySelectorAll('.openbtn').forEach(a => {
     a.addEventListener('click', e => {
       if (tg) { e.preventDefault(); tg.openLink(a.href); }
+    });
+  });
+  app.querySelectorAll('.selbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.dataset.sel;
+      const it = DATA.items.find(i => i.code === code);
+      const type = it && it.stage !== undefined ? 'deselect' : 'select';
+      if (canSendData) { sendSelect(code, type); btn.textContent = 'ثبت شد ✓'; btn.disabled = true; }
     });
   });
 }
