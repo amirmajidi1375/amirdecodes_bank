@@ -16,9 +16,13 @@
   body{margin:0; font-family:'Vazirmatn',Tahoma,sans-serif; background:var(--bg); color:var(--text); padding:0 14px 48px; min-height:100vh}
 
   /* نوار بالای باریک و چسبان: فقط عنوان + شمارنده + دکمهٔ فیلترها */
-  .topbar{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:10px;
+  .topbar{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
     background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
     margin:0 -14px; padding:10px 14px; border-bottom:1px solid var(--line)}
+  /* انتخاب‌گر اصلی پیج: سگمنت سه‌تایی، همیشه بالای صفحه — حالت «همه» ندارد */
+  .seg{display:flex; width:100%; background:var(--chip); border-radius:10px; padding:3px; gap:3px}
+  .seg button{flex:1; border:0; background:transparent; color:var(--muted); font-family:inherit; font-size:13px; font-weight:500; padding:6px 4px; border-radius:8px; cursor:pointer}
+  .seg button.on{background:#fff; color:var(--text); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.08)}
   .topbar .ttl{font-size:15px; font-weight:900; white-space:nowrap}
   .topbar .cnt{color:var(--muted); font-size:12px; white-space:nowrap}
   .topbar .cnt b{color:var(--text); font-weight:700}
@@ -83,16 +87,14 @@
   <span class="ttl">بانک ایده 🔓</span>
   <span class="cnt" id="liveCount">…</span>
   <button id="filterToggle" aria-expanded="false">فیلترها <span class="fbadge" id="activeBadge"></span><span class="chev">▾</span></button>
+  <div class="seg" id="bucketSeg">
+    <button data-bucket="shode.dige" class="on">شده دیگه</button>
+    <button data-bucket="amirdecodes">AmirDecodes</button>
+    <button data-bucket="undecided">نامشخص</button>
+  </div>
 </div>
 
 <div class="filters" id="filters" hidden>
-  <div class="flabel">پیج</div>
-  <div class="chips" id="bucketChips">
-    <button class="chip on" data-bucket="">همه</button>
-    <button class="chip" data-bucket="amirdecodes">AmirDecodes</button>
-    <button class="chip" data-bucket="shode.dige">Shode.dige</button>
-    <button class="chip" data-bucket="undecided">نامشخص</button>
-  </div>
   <div class="frow">
     <label>مرتب‌سازی وایرال
       <select id="sortSel">
@@ -129,11 +131,11 @@ if (tg) {
   try { tg.ready(); tg.expand(); tg.setHeaderColor('#ffffff'); tg.setBackgroundColor('#f7f7f5'); } catch(e) {}
 }
 const faNum = n => Number(n).toLocaleString('fa-IR');
-const state = { bucket: '', sort: 'desc', minLikes: 0, sender: '', from: '', to: '' };
+const state = { bucket: 'shode.dige', sort: 'desc', minLikes: 0, sender: '', from: '', to: '' };
 let DATA = null;
 
 function passFilters(it) {
-  if (state.bucket && it.bucket !== state.bucket) return false;
+  if (it.bucket !== state.bucket) return false;
   if (state.minLikes && it.likes < state.minLikes) return false;
   if (state.sender && it.sender !== state.sender) return false;
   const d = (it.sent_iso || '').slice(0, 10);
@@ -144,7 +146,6 @@ function passFilters(it) {
 
 function activeCount() {
   let n = 0;
-  if (state.bucket) n++;
   if (state.sort !== 'desc') n++;
   if (state.minLikes) n++;
   if (state.sender) n++;
@@ -179,8 +180,9 @@ function render() {
   const app = document.getElementById('app');
   const items = DATA.items.filter(passFilters);
   items.sort((a, b) => state.sort === 'desc' ? b.likes - a.likes : a.likes - b.likes);
+  const bucketTotal = DATA.items.filter(i => i.bucket === state.bucket).length;
   document.getElementById('liveCount').innerHTML =
-    `نمایش <b>${faNum(items.length)}</b> از ${faNum(DATA.count)}`;
+    `نمایش <b>${faNum(items.length)}</b> از ${faNum(bucketTotal)}`;
   const badge = document.getElementById('activeBadge');
   const ac = activeCount();
   badge.style.display = ac ? '' : 'none';
@@ -191,6 +193,7 @@ function render() {
   }
   let html = '';
   for (const b of DATA.buckets) {
+    if (b.key !== state.bucket) continue;
     const inBucket = items.filter(i => i.bucket === b.key);
     if (!inBucket.length) continue;
     html += `<section class="bucket"><div class="buckethead">` +
@@ -222,11 +225,11 @@ function bindFilters() {
     toggle.classList.toggle('open', open);
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
-  document.querySelectorAll('#bucketChips .chip').forEach(ch => {
-    ch.addEventListener('click', () => {
-      document.querySelectorAll('#bucketChips .chip').forEach(x => x.classList.remove('on'));
-      ch.classList.add('on');
-      state.bucket = ch.dataset.bucket;
+  document.querySelectorAll('#bucketSeg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#bucketSeg button').forEach(x => x.classList.remove('on'));
+      btn.classList.add('on');
+      state.bucket = btn.dataset.bucket;
       render();
     });
   });
@@ -236,13 +239,12 @@ function bindFilters() {
   document.getElementById('dateFrom').addEventListener('change', e => { state.from = e.target.value; render(); });
   document.getElementById('dateTo').addEventListener('change', e => { state.to = e.target.value; render(); });
   document.getElementById('resetBtn').addEventListener('click', () => {
-    state.bucket = ''; state.sort = 'desc'; state.minLikes = 0; state.sender = ''; state.from = ''; state.to = '';
+    state.sort = 'desc'; state.minLikes = 0; state.sender = ''; state.from = ''; state.to = '';
     document.getElementById('sortSel').value = 'desc';
     document.getElementById('minLikes').value = '';
     document.getElementById('senderSel').value = '';
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
-    document.querySelectorAll('#bucketChips .chip').forEach(x => x.classList.toggle('on', x.dataset.bucket === ''));
     render();
   });
 }
