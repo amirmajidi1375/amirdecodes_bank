@@ -90,6 +90,7 @@
   .notice.show{display:block}
   .notice.always{display:block}
   .dropbtn{display:block; width:100%; margin-top:6px; background:#fff; border:1px solid var(--line); color:var(--muted); font-weight:500; font-size:12.5px; border-radius:9px; padding:8px; font-family:inherit; cursor:pointer}
+  a.selbtn, a.dropbtn{text-decoration:none; text-align:center}
   .mech{font-size:12.5px; line-height:1.9; color:#4a4d55; margin-top:6px}
   .mech b{color:var(--accent)}
   .forpage{display:inline-block; background:var(--chip); color:var(--text); font-size:11.5px; font-weight:700; border-radius:999px; padding:2px 10px; margin-top:8px}
@@ -160,13 +161,12 @@ if (tg) {
 const faNum = n => Number(n).toLocaleString('fa-IR');
 const state = { bucket: 'shode.dige', sort: 'desc', minLikes: 0, sender: '', from: '', to: '', view: 'all' };
 let DATA = null;
-// sendData only actually delivers when the app was launched from the bot
-// (menu button in the private chat). A plain link / external browser has no
-// usable initData (platform 'unknown'), and an app opened any other way must
-// NOT fake a success: Amir hit exactly that false «ثبت شد» on 2026-10-23.
-const canSendData = !!(tg && typeof tg.sendData === 'function' && tg.initData &&
-                       tg.platform && tg.platform !== 'unknown');
-const SEND_NOTICE = 'انتخاب فقط وقتی ثبت می‌شه که بانک رو از دکمهٔ «بانک ایده» توی چت خصوصی بات باز کنی — از لینک مستقیم ثبت نمی‌شه.';
+// Actions (select / promote / drop) are bot deep links: the old WebApp
+// data channel never delivered for Amir, so a tap now goes to the bot chat with a
+// /start payload; the bot registers the action and announces it in the
+// AmirDecodes group together with the production stages.
+const BOT_BASE = 'https://t.me/Muse_Amirdecodes_bot?start=';
+const START_HINT = 'با زدن دکمه می‌ری به چت بات؛ اونجا Start رو بزن تا انتخابت توی گروه ثبت بشه';
 const BUCKET_SUGGEST_FA = { 'AmirDecodes': 'AmirDecodes', 'Shode.dige': 'شده‌دیگه', 'نامشخص': 'نامشخص' };
 
 function passFilters(it) {
@@ -178,17 +178,6 @@ function passFilters(it) {
   if (state.from && d < state.from) return false;
   if (state.to && d > state.to) return false;
   return true;
-}
-
-function sendPayload(obj) {
-  if (!canSendData) return false;
-  try { tg.sendData(JSON.stringify(obj)); return true; } catch (e) { return false; }
-}
-
-function showNotice(btn) {
-  const card = btn.closest('.card');
-  const n = card ? card.querySelector('.notice') : null;
-  if (n) { n.classList.add('show'); n.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
 
 function activeCount() {
@@ -220,13 +209,11 @@ function cardHTML(it) {
         ${it.route ? `<div class="route">روش ساخت: ${it.route}</div>` : ''}
         ${it.selected_by ? `<div class="route">انتخاب: ${it.selected_by}</div>` : ''}
       </div>
-      <button class="selbtn on" data-sel="${it.code}">انتخاب شده ✓ — لغو</button>`;
+      <a class="selbtn on" href="${BOT_BASE}des_${it.code}">انتخاب شده ✓ — لغو</a>`;
   } else {
-    sel = `<button class="selbtn" data-sel="${it.code}">🎬 ثبت انتخاب برای ساخت</button>`;
+    sel = `<a class="selbtn" href="${BOT_BASE}sel_${it.code}">🎬 ثبت انتخاب برای ساخت</a>`;
   }
-  if (!canSendData) {
-    sel += `<div class="notice">${SEND_NOTICE}</div>`;
-  }
+  sel += `<div class="selhint">${START_HINT}</div>`;
   return `<article class="card${selected ? ' selected' : ''}" data-code="${it.code}">
     ${thumb}
     <div class="row1">
@@ -256,7 +243,6 @@ function candCardHTML(c) {
   } else if (c.thumb) {
     thumb = `<img class="thumb" src="${c.thumb}" alt="" loading="lazy">`;
   }
-  const notice = canSendData ? '' : `<div class="notice">${SEND_NOTICE}</div>`;
   return `<article class="card" data-cand="${c.id}">
     ${thumb}
     <div class="row1">
@@ -271,9 +257,9 @@ function candCardHTML(c) {
     <div class="mech"><b>چرا وایرال شد؟</b> ${c.mechanism_note || ''}</div>
     <span class="forpage">برای پیج: ${BUCKET_SUGGEST_FA[c.bucket_suggestion] || c.bucket_suggestion || ''}</span>
     <a class="openbtn" href="${c.url}" target="_blank" rel="noopener">تماشای کامل در اینستاگرام</a>
-    <button class="selbtn promotebtn" data-promote="${c.id}">✅ بیاد توی لیست اصلی</button>
-    <button class="dropbtn" data-drop="${c.id}">✕ نمی‌خوامش</button>
-    ${notice}
+    <a class="selbtn" href="${BOT_BASE}pro_${c.id}">✅ بیاد توی لیست اصلی</a>
+    <a class="dropbtn" href="${BOT_BASE}dro_${c.id}">✕ نمی‌خوامش</a>
+    <div class="selhint">${START_HINT}</div>
   </article>`;
 }
 
@@ -350,33 +336,6 @@ function bindCardEvents(app) {
   app.querySelectorAll('.openbtn').forEach(a => {
     a.addEventListener('click', e => {
       if (tg) { e.preventDefault(); tg.openLink(a.href); }
-    });
-  });
-  app.querySelectorAll('.selbtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!canSendData) { showNotice(btn); return; }
-      const code = btn.dataset.sel;
-      const it = DATA.items.find(i => i.code === code);
-      const type = it && it.stage !== undefined ? 'deselect' : 'select';
-      if (sendPayload({ type: type, code: code })) { btn.textContent = 'ثبت شد ✓'; btn.disabled = true; }
-    });
-  });
-  app.querySelectorAll('.promotebtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!canSendData) { showNotice(btn); return; }
-      if (sendPayload({ type: 'promote', id: btn.dataset.promote })) {
-        btn.textContent = 'ثبت شد ✓'; btn.disabled = true;
-        const d = btn.closest('.card').querySelector('.dropbtn'); if (d) d.disabled = true;
-      }
-    });
-  });
-  app.querySelectorAll('.dropbtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!canSendData) { showNotice(btn); return; }
-      if (sendPayload({ type: 'drop', id: btn.dataset.drop })) {
-        btn.textContent = 'ثبت شد ✓'; btn.disabled = true;
-        const p = btn.closest('.card').querySelector('.promotebtn'); if (p) p.disabled = true;
-      }
     });
   });
   app.querySelectorAll('.thumbwrap').forEach(w => {
