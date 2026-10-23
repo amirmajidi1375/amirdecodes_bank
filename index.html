@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>بانک ایده‌های amirdecodes</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1a2e; --bg2:#12121f; --card:#23233d; --card2:#2a2a47;
+    --teal:#2dd4bf; --orange:#f59e0b; --text:#f2f2f7; --muted:#a7a7c4; --line:#34345a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; font-family:'Vazirmatn',Tahoma,sans-serif; background:linear-gradient(180deg,var(--bg),var(--bg2)); color:var(--text); padding:14px 12px 90px; min-height:100vh}
+  header.top{text-align:center; padding:8px 0 4px}
+  header.top h1{margin:0; font-size:21px; font-weight:900}
+  header.top h1 .lock{color:var(--teal)}
+  header.top p{margin:6px 0 0; color:var(--muted); font-size:12.5px}
+  #liveCount{color:var(--orange); font-weight:700}
+
+  .filters{position:sticky; top:0; z-index:20; background:rgba(18,18,31,.94); backdrop-filter:blur(8px); border:1px solid var(--line); border-radius:16px; padding:10px; margin:12px 0 6px}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
+  .chip{border:1.5px solid var(--line); background:var(--card); color:var(--muted); border-radius:999px; padding:6px 13px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer}
+  .chip.on{border-color:var(--teal); color:#0d2b27; background:var(--teal)}
+  .frow{display:flex; gap:8px; flex-wrap:wrap}
+  .frow label{flex:1 1 30%; min-width:100px; font-size:11px; color:var(--muted); display:flex; flex-direction:column; gap:4px}
+  .frow select,.frow input{background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:8px; font-family:inherit; font-size:13px; width:100%}
+  .frow input[type="date"]{direction:ltr; text-align:left}
+  #resetBtn{margin-top:10px; width:100%; background:transparent; border:1px dashed var(--line); color:var(--muted); border-radius:10px; padding:7px; font-family:inherit; font-size:12.5px; cursor:pointer}
+
+  section.cat{margin-top:20px}
+  .cathead{display:flex; align-items:center; gap:9px; margin-bottom:4px}
+  .catbadge{width:34px; height:34px; border-radius:11px; background:var(--teal); color:#0d2b27; font-weight:900; font-size:17px; display:flex; align-items:center; justify-content:center; flex:none}
+  .cathead h2{margin:0; font-size:16.5px; font-weight:900}
+  .cathead .n{color:var(--muted); font-size:12px; font-weight:400}
+  .blurb{color:var(--muted); font-size:12px; margin:2px 0 10px; line-height:1.8}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px 13px; margin-bottom:10px}
+  .card .row1{display:flex; align-items:center; gap:7px; margin-bottom:7px}
+  .code{background:var(--card2); border:1px solid var(--line); color:var(--teal); font-weight:900; font-size:12.5px; border-radius:8px; padding:2px 9px}
+  .rank{background:var(--orange); color:#2a1a00; font-weight:900; font-size:11.5px; border-radius:8px; padding:2px 9px}
+  .kind{color:var(--muted); font-size:11.5px; margin-inline-start:auto}
+  .card h3{margin:0 0 5px; font-size:15.5px; font-weight:700; line-height:1.7}
+  .creator{color:var(--teal); font-size:12.5px; direction:ltr; text-align:right; unicode-bidi:isolate}
+  .stats{display:flex; gap:14px; color:var(--muted); font-size:12.5px; margin:7px 0}
+  .stats b{color:var(--text); font-weight:700}
+  .summary{font-size:13px; line-height:1.95; color:#d9d9e8; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+  .card.open .summary{-webkit-line-clamp:unset}
+  .more{color:var(--teal); font-size:12px; cursor:pointer; user-select:none}
+  .caption{font-size:12px; color:var(--muted); border-inline-start:3px solid var(--orange); padding:2px 9px; margin:8px 0; line-height:1.9}
+  .tags{display:flex; gap:5px; flex-wrap:wrap; margin:8px 0}
+  .tag{background:var(--card2); color:var(--muted); font-size:11px; border-radius:999px; padding:2px 9px}
+  .meta{display:flex; gap:6px; flex-wrap:wrap; color:var(--muted); font-size:11.5px; margin-top:8px}
+  .openbtn{display:block; text-align:center; margin-top:11px; background:var(--teal); color:#0d2b27; font-weight:900; font-size:13.5px; border-radius:11px; padding:10px; text-decoration:none}
+  .empty{text-align:center; color:var(--muted); padding:44px 10px; font-size:14px; line-height:2}
+  footer.note{text-align:center; color:var(--muted); font-size:11.5px; margin-top:26px; line-height:2}
+  .loading{text-align:center; color:var(--muted); padding:60px 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>بانک ایده‌های <span class="lock">amirdecodes</span> 🔓</h1>
+  <p id="subtitle">در حال بارگذاری…</p>
+</header>
+
+<div class="filters" id="filters" style="display:none">
+  <div class="chips" id="catChips"></div>
+  <div class="frow">
+    <label>مرتب‌سازی وایرال
+      <select id="sortSel">
+        <option value="desc">پرلایک‌ترین اول</option>
+        <option value="asc">کم‌لایک‌ترین اول</option>
+      </select>
+    </label>
+    <label>حداقل لایک
+      <input id="minLikes" type="number" inputmode="numeric" min="0" placeholder="۰">
+    </label>
+    <label>فرستنده
+      <select id="senderSel">
+        <option value="">همه</option>
+        <option value="امیر">امیر</option>
+        <option value="نگین">نگین</option>
+      </select>
+    </label>
+    <label>از تاریخ
+      <input id="dateFrom" type="date">
+    </label>
+    <label>تا تاریخ
+      <input id="dateTo" type="date">
+    </label>
+  </div>
+  <button id="resetBtn">پاک‌کردن فیلترها</button>
+</div>
+
+<main id="app"><div class="loading">…</div></main>
+<footer class="note">قاعدهٔ بانک: مکانیزم هر ایده استخراج می‌شود؛ سطح و متنش کپی نمی‌شود.<br>وضعیت همهٔ آیتم‌ها: دسته‌بندی‌شده — منتظر تحلیل عمیق</footer>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp ? Telegram.WebApp : null;
+if (tg) {
+  try { tg.ready(); tg.expand(); tg.setHeaderColor('#1a1a2e'); tg.setBackgroundColor('#1a1a2e'); } catch(e) {}
+}
+const faNum = n => Number(n).toLocaleString('fa-IR');
+const state = { cats: new Set(['A','B','C','D','E']), sort: 'desc', minLikes: 0, sender: '', from: '', to: '' };
+let DATA = null;
+
+function passFilters(it) {
+  if (!state.cats.has(it.category)) return false;
+  if (state.minLikes && it.likes < state.minLikes) return false;
+  if (state.sender && it.sender !== state.sender) return false;
+  const d = (it.sent_iso || '').slice(0, 10);
+  if (state.from && d < state.from) return false;
+  if (state.to && d > state.to) return false;
+  return true;
+}
+
+function cardHTML(it) {
+  const tags = it.tags.map(t => `<span class="tag">#${t}</span>`).join('');
+  const cap = it.caption ? `<div class="caption">${it.caption}</div>` : '';
+  return `<article class="card" data-code="${it.code}">
+    <div class="row1">
+      <span class="code">${it.code}</span>
+      <span class="rank">رتبهٔ کلی ${faNum(it.rank)}</span>
+      <span class="kind">${it.kind === 'post' ? 'پست (عکس)' : 'ریلز'}</span>
+    </div>
+    <h3>${it.title}</h3>
+    <div class="creator">${it.creator}${it.creator_name ? ' (' + it.creator_name + ')' : ''}</div>
+    <div class="stats"><span>❤️ <b>${faNum(it.likes)}</b></span><span>💬 <b>${faNum(it.comments)}</b></span></div>
+    <div class="summary">${it.summary}</div>
+    <span class="more">ادامه…</span>
+    ${cap}
+    <div class="tags">${tags}</div>
+    <div class="meta"><span>📤 ${it.sender} — ${it.sent_display}</span><span>•</span><span>${it.source}</span></div>
+    <a class="openbtn" href="${it.url}" target="_blank" rel="noopener">دیدن در اینستاگرام</a>
+  </article>`;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const items = DATA.items.filter(passFilters);
+  items.sort((a, b) => state.sort === 'desc' ? b.likes - a.likes : a.likes - b.likes);
+  document.getElementById('subtitle').innerHTML =
+    `نمایش <span id="liveCount">${faNum(items.length)}</span> از ${faNum(DATA.count)} ایده در ${faNum(DATA.categories.length)} دسته`;
+  if (!items.length) {
+    app.innerHTML = '<div class="empty">با این فیلترها چیزی نیست 🤷<br>فیلترها رو کمتر کن.</div>';
+    return;
+  }
+  let html = '';
+  for (const cat of DATA.categories) {
+    const inCat = items.filter(i => i.category === cat.letter);
+    if (!inCat.length) continue;
+    html += `<section class="cat"><div class="cathead"><div class="catbadge">${cat.letter}</div>` +
+      `<h2>${cat.name} <span class="n">(${faNum(inCat.length)} ایده)</span></h2></div>` +
+      (cat.blurb ? `<p class="blurb">${cat.blurb}</p>` : '') +
+      inCat.map(cardHTML).join('') + `</section>`;
+  }
+  app.innerHTML = html;
+  app.querySelectorAll('.card .more').forEach(el => {
+    el.addEventListener('click', () => {
+      const card = el.closest('.card');
+      card.classList.toggle('open');
+      el.textContent = card.classList.contains('open') ? 'بستن' : 'ادامه…';
+    });
+  });
+  app.querySelectorAll('.openbtn').forEach(a => {
+    a.addEventListener('click', e => {
+      if (tg) { e.preventDefault(); tg.openLink(a.href); }
+    });
+  });
+}
+
+function buildChips() {
+  const wrap = document.getElementById('catChips');
+  wrap.innerHTML = DATA.categories.map(c =>
+    `<button class="chip on" data-cat="${c.letter}">${c.letter} — ${c.name}</button>`).join('');
+  wrap.querySelectorAll('.chip').forEach(ch => {
+    ch.addEventListener('click', () => {
+      const c = ch.dataset.cat;
+      if (state.cats.has(c)) { state.cats.delete(c); ch.classList.remove('on'); }
+      else { state.cats.add(c); ch.classList.add('on'); }
+      render();
+    });
+  });
+}
+
+function bindFilters() {
+  document.getElementById('sortSel').addEventListener('change', e => { state.sort = e.target.value; render(); });
+  document.getElementById('minLikes').addEventListener('input', e => { state.minLikes = parseInt(e.target.value, 10) || 0; render(); });
+  document.getElementById('senderSel').addEventListener('change', e => { state.sender = e.target.value; render(); });
+  document.getElementById('dateFrom').addEventListener('change', e => { state.from = e.target.value; render(); });
+  document.getElementById('dateTo').addEventListener('change', e => { state.to = e.target.value; render(); });
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    state.cats = new Set(['A','B','C','D','E']); state.sort = 'desc'; state.minLikes = 0; state.sender = ''; state.from = ''; state.to = '';
+    document.getElementById('sortSel').value = 'desc';
+    document.getElementById('minLikes').value = '';
+    document.getElementById('senderSel').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.querySelectorAll('.chip').forEach(ch => ch.classList.add('on'));
+    render();
+  });
+}
+
+fetch('data.json?t=' + Date.now(), { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : null)
+  .then(d => {
+    if (!d) { document.getElementById('app').innerHTML = '<div class="empty">خطا در بارگذاری بانک ⚠️</div>'; return; }
+    DATA = d;
+    document.getElementById('filters').style.display = '';
+    buildChips(); bindFilters(); render();
+  })
+  .catch(() => { document.getElementById('app').innerHTML = '<div class="empty">خطا در بارگذاری بانک ⚠️</div>'; });
+</script>
+</body>
+</html>
