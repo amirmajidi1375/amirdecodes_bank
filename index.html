@@ -117,6 +117,7 @@
   <div class="seg" id="bucketSeg">
     <button data-bucket="shode.dige" class="on">شده دیگه</button>
     <button data-bucket="amirdecodes">AmirDecodes</button>
+    <button data-bucket="asatir">اساطیر</button>
     <button data-bucket="undecided">نامشخص</button>
     <button data-bucket="suggestions">پیشنهادات میوز</button>
   </div>
@@ -167,7 +168,7 @@ let DATA = null;
 // AmirDecodes group together with the production stages.
 const BOT_BASE = 'https://t.me/Muse_Amirdecodes_bot?start=';
 const START_HINT = 'با زدن دکمه می‌ری به چت بات؛ اونجا Start رو بزن تا انتخابت توی گروه ثبت بشه';
-const BUCKET_SUGGEST_FA = { 'AmirDecodes': 'AmirDecodes', 'Shode.dige': 'شده‌دیگه', 'نامشخص': 'نامشخص' };
+const BUCKET_SUGGEST_FA = { 'AmirDecodes': 'AmirDecodes', 'Shode.dige': 'شده‌دیگه', 'اساطیر': 'اساطیر', 'نامشخص': 'نامشخص' };
 
 function passFilters(it) {
   if (it.bucket !== state.bucket) return false;
