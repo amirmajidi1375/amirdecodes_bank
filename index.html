@@ -58,6 +58,12 @@
   @media (min-width:1080px){ .grid{grid-template-columns:repeat(3,1fr)} }
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:flex; flex-direction:column}
+  /* «پیشنهادات میوز» live INSIDE their own domain, at the end of its list:
+     distinct amber frame + badge, clearly NOT user-sent items. */
+  .card.suggestion{border:2px solid #f59e0b; background:#fffbeb}
+  .suggbadge{display:inline-block; background:#f59e0b; color:#fff; font-size:11.5px; font-weight:700; border-radius:999px; padding:2px 10px; margin-top:8px}
+  .sugghead{margin:22px 0 2px; font-size:14px; font-weight:900}
+  .sugghead .n{color:var(--muted); font-size:12px; font-weight:400}
   .card .row1{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
   .code{background:var(--chip); color:var(--muted); font-weight:700; font-size:11.5px; border-radius:6px; padding:1px 7px}
   .rank{color:var(--muted); font-weight:500; font-size:11.5px}
@@ -115,11 +121,12 @@
   <span class="cnt" id="liveCount">…</span>
   <button id="filterToggle" aria-expanded="false">فیلترها <span class="fbadge" id="activeBadge"></span><span class="chev">▾</span></button>
   <div class="seg" id="bucketSeg">
-    <button data-bucket="shode.dige" class="on">شده دیگه</button>
-    <button data-bucket="amirdecodes">AmirDecodes</button>
-    <button data-bucket="asatir">اساطیر</button>
+    <button data-bucket="amirdecodes" class="on">روانشناسی</button>
+    <button data-bucket="asatir">شاهنامه</button>
+    <button data-bucket="shode.dige">شده دیگه</button>
+    <button data-bucket="cats">گربه‌ها</button>
+    <button data-bucket="hamkar">همکار</button>
     <button data-bucket="undecided">نامشخص</button>
-    <button data-bucket="suggestions">پیشنهادات میوز</button>
   </div>
 </div>
 
@@ -160,7 +167,7 @@ if (tg) {
   try { tg.ready(); tg.expand(); tg.setHeaderColor('#ffffff'); tg.setBackgroundColor('#f7f7f5'); } catch(e) {}
 }
 const faNum = n => Number(n).toLocaleString('fa-IR');
-const state = { bucket: 'shode.dige', sort: 'desc', minLikes: 0, sender: '', from: '', to: '', view: 'all' };
+const state = { bucket: 'amirdecodes', sort: 'desc', minLikes: 0, sender: '', from: '', to: '', view: 'all' };
 let DATA = null;
 // Actions (select / promote / drop) are bot deep links: the old WebApp
 // data channel never delivered for Amir, so a tap now goes to the bot chat with a
@@ -168,7 +175,10 @@ let DATA = null;
 // AmirDecodes group together with the production stages.
 const BOT_BASE = 'https://t.me/Muse_Amirdecodes_bot?start=';
 const START_HINT = 'با زدن دکمه می‌ری به چت بات؛ اونجا Start رو بزن تا انتخابت توی گروه ثبت بشه';
-const BUCKET_SUGGEST_FA = { 'AmirDecodes': 'AmirDecodes', 'Shode.dige': 'شده‌دیگه', 'اساطیر': 'اساطیر', 'نامشخص': 'نامشخص' };
+const BUCKET_SUGGEST_FA = { 'AmirDecodes': 'روانشناسی', 'روانشناسی': 'روانشناسی', 'Shode.dige': 'شده‌دیگه', 'شده دیگه': 'شده دیگه', 'اساطیر': 'شاهنامه', 'شاهنامه': 'شاهنامه', 'نامشخص': 'نامشخص', 'گربه‌ها': 'گربه‌ها', 'همکار': 'همکار' };
+/* Suggestion's own domain (build_data.py writes bucket_key; the map is the
+   fallback for older data.json files without it). */
+const SUGGEST2KEY = { 'AmirDecodes': 'amirdecodes', 'روانشناسی': 'amirdecodes', 'Shode.dige': 'shode.dige', 'شده دیگه': 'shode.dige', 'اساطیر': 'asatir', 'شاهنامه': 'asatir', 'نامشخص': 'undecided', 'گربه‌ها': 'cats', 'همکار': 'hamkar' };
 
 function passFilters(it) {
   if (it.bucket !== state.bucket) return false;
@@ -244,12 +254,13 @@ function candCardHTML(c) {
   } else if (c.thumb) {
     thumb = `<img class="thumb" src="${c.thumb}" alt="" loading="lazy">`;
   }
-  return `<article class="card" data-cand="${c.id}">
+  return `<article class="card suggestion" data-cand="${c.id}">
     ${thumb}
     <div class="row1">
       <span class="code">${c.id}</span>
       <span class="kind">پیشنهاد میوز</span>
     </div>
+    <span class="suggbadge">🤖 پیشنهاد میوز — پیشنهاد خود میوز است، نه ارسال کاربر</span>
     <h3>${c.title || ''}</h3>
     <div class="sub">
       <span class="creator">${c.creator || ''}</span>
@@ -264,31 +275,15 @@ function candCardHTML(c) {
   </article>`;
 }
 
-function renderSuggestions(app) {
-  const cands = DATA.suggestions || [];
-  document.getElementById('liveCount').innerHTML =
-    `<b>${faNum(cands.length)}</b> پیشنهاد`;
-  const badge = document.getElementById('activeBadge');
-  badge.style.display = 'none';
-  let html = `<section class="bucket"><div class="buckethead">` +
-    `<h2>پیشنهادات میوز</h2><span class="n">${faNum(cands.length)} ویدیو</span></div>` +
-    `<p class="blurb">ویدیوهای کاملاً وایرالی که میوز روزانه پیدا می‌کنه؛ اگه پسندیدی بفرستش توی لیست اصلی تا برای ساخت انتخاب بشه.</p>`;
-  if (!cands.length) {
-    html += '<div class="empty">فعلاً پیشنهادی نیست 🌱<br>میوز هر روز می‌گرده و ویدیوهای کاملاً وایرال رو اینجا می‌ذاره.</div>';
-  } else {
-    html += `<div class="grid">` + cands.map(candCardHTML).join('') + `</div>`;
-  }
-  html += `</section>`;
-  app.innerHTML = html;
+/* «پیشنهادات میوز» no longer has its own tab: each suggestion renders
+   INSIDE its own domain, at the END of that domain's list (see render). */
+function bucketSuggestions() {
+  return (DATA.suggestions || []).filter(c =>
+    (c.bucket_key || SUGGEST2KEY[c.bucket_suggestion] || 'undecided') === state.bucket);
 }
 
 function render() {
   const app = document.getElementById('app');
-  if (state.bucket === 'suggestions') {
-    renderSuggestions(app);
-    bindCardEvents(app);
-    return;
-  }
   let items = DATA.items.filter(passFilters);
   if (state.view === 'prod') {
     items.sort((a, b) => (a.stage - b.stage) || (a.rank - b.rank));
@@ -297,8 +292,10 @@ function render() {
   }
   const bucketTotal = DATA.items.filter(i => i.bucket === state.bucket).length;
   const prodTotal = DATA.items.filter(i => i.bucket === state.bucket && i.stage !== undefined).length;
+  const sugg = bucketSuggestions();
   document.getElementById('liveCount').innerHTML =
-    `نمایش <b>${faNum(items.length)}</b> از ${faNum(bucketTotal)}`;
+    `نمایش <b>${faNum(items.length)}</b> از ${faNum(bucketTotal)}` +
+    (sugg.length ? ` + <b>${faNum(sugg.length)}</b> پیشنهاد میوز` : '');
   const badge = document.getElementById('activeBadge');
   const ac = activeCount();
   badge.style.display = ac ? '' : 'none';
@@ -317,6 +314,13 @@ function render() {
       : '<div class="empty">با این فیلترها چیزی نیست 🤷<br>فیلترها رو کمتر کن.</div>';
   } else {
     html += `<div class="grid">` + items.map(cardHTML).join('') + `</div>`;
+  }
+  /* Muse's own suggestions for THIS domain, at the end of its list,
+     in the distinct amber frame (never mixed into the user-sent list). */
+  if (sugg.length && state.view !== 'prod') {
+    html += `<div class="sugghead">🤖 پیشنهادات میوز در این بخش <span class="n">${faNum(sugg.length)} ویدیو — پیشنهاد خود میوز، نه ارسال کاربر</span></div>` +
+      `<p class="blurb">ویدیوهای کاملاً وایرالی که میوز روزانه پیدا می‌کنه؛ اگه پسندیدی بفرستش توی لیست اصلی تا برای ساخت انتخاب بشه.</p>` +
+      `<div class="grid">` + sugg.map(candCardHTML).join('') + `</div>`;
   }
   html += `</section>`;
   app.innerHTML = html;
