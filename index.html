@@ -97,6 +97,14 @@
   .notice.always{display:block}
   .dropbtn{display:block; width:100%; margin-top:6px; background:#fff; border:1px solid var(--line); color:var(--muted); font-weight:500; font-size:12.5px; border-radius:9px; padding:8px; font-family:inherit; cursor:pointer}
   a.selbtn, a.dropbtn{text-decoration:none; text-align:center}
+  /* آرشیو «ساخته‌شده‌ها» (۲۰۲۶-۱۱-۰۹): همان تب، باکس جدا در ته بخش،
+     بسته به‌صورت پیش‌فرض؛ کارت آرشیوی کم‌رنگ‌تر از بقیه. */
+  .arcbtn{display:block; width:100%; margin-top:6px; background:#fff; border:1px solid var(--line); color:var(--muted); font-weight:500; font-size:12.5px; border-radius:9px; padding:8px; font-family:inherit; cursor:pointer; text-decoration:none; text-align:center}
+  .card.archived{opacity:.55}
+  .card.archived .thumb{filter:grayscale(.65)}
+  .archivebox{margin-top:20px; border:1px dashed var(--line); border-radius:12px; padding:12px; background:#fafaf8}
+  .archivetoggle{display:block; width:100%; background:#fff; border:1px solid var(--line); color:var(--text); font-weight:700; font-size:13px; border-radius:9px; padding:9px; font-family:inherit; cursor:pointer}
+  .archivebox .grid{margin-top:12px}
   .mech{font-size:12.5px; line-height:1.9; color:#4a4d55; margin-top:6px}
   .mech b{color:var(--accent)}
   .forpage{display:inline-block; background:var(--chip); color:var(--text); font-size:11.5px; font-weight:700; border-radius:999px; padding:2px 10px; margin-top:8px}
@@ -224,8 +232,11 @@ function cardHTML(it) {
   } else {
     sel = `<a class="selbtn" href="${BOT_BASE}sel_${it.code}">🎬 ثبت انتخاب برای ساخت</a>`;
   }
-  sel += `<div class="selhint">${START_HINT}</div>`;
-  return `<article class="card${selected ? ' selected' : ''}" data-code="${it.code}">
+  const arc = it.archived
+    ? `<a class="arcbtn" href="${BOT_BASE}una_${it.code}">↩ برگردوندن از آرشیو</a>`
+    : `<a class="arcbtn" href="${BOT_BASE}arc_${it.code}">✅ ساخته شده — بفرست به آرشیو</a>`;
+  sel += arc + `<div class="selhint">${START_HINT}</div>`;
+  return `<article class="card${selected ? ' selected' : ''}${it.archived ? ' archived' : ''}" data-code="${it.code}">
     ${thumb}
     <div class="row1">
       <span class="code">${it.code}</span>
@@ -284,18 +295,22 @@ function bucketSuggestions() {
 
 function render() {
   const app = document.getElementById('app');
-  let items = DATA.items.filter(passFilters);
+  /* آرشیوی‌ها از لیست اصلی جدا می‌مانند و ته همان بخش، در باکس آرشیو
+     (بسته به‌صورت پیش‌فرض) نمایش داده می‌شوند. */
+  const archivedItems = DATA.items.filter(i => i.bucket === state.bucket && i.archived);
+  let items = DATA.items.filter(passFilters).filter(i => !i.archived);
   if (state.view === 'prod') {
     items.sort((a, b) => (a.stage - b.stage) || (a.rank - b.rank));
   } else {
     items.sort((a, b) => state.sort === 'desc' ? b.likes - a.likes : a.likes - b.likes);
   }
   const bucketTotal = DATA.items.filter(i => i.bucket === state.bucket).length;
-  const prodTotal = DATA.items.filter(i => i.bucket === state.bucket && i.stage !== undefined).length;
+  const prodTotal = DATA.items.filter(i => i.bucket === state.bucket && i.stage !== undefined && !i.archived).length;
   const sugg = bucketSuggestions();
   document.getElementById('liveCount').innerHTML =
     `نمایش <b>${faNum(items.length)}</b> از ${faNum(bucketTotal)}` +
-    (sugg.length ? ` + <b>${faNum(sugg.length)}</b> پیشنهاد میوز` : '');
+    (sugg.length ? ` + <b>${faNum(sugg.length)}</b> پیشنهاد میوز` : '') +
+    (archivedItems.length ? ` + <b>${faNum(archivedItems.length)}</b> آرشیوی` : '');
   const badge = document.getElementById('activeBadge');
   const ac = activeCount();
   badge.style.display = ac ? '' : 'none';
@@ -322,12 +337,31 @@ function render() {
       `<p class="blurb">ویدیوهای کاملاً وایرالی که میوز روزانه پیدا می‌کنه؛ اگه پسندیدی بفرستش توی لیست اصلی تا برای ساخت انتخاب بشه.</p>` +
       `<div class="grid">` + sugg.map(candCardHTML).join('') + `</div>`;
   }
+  /* باکس آرشیو همان بخش: ساخته‌شده‌ها، کم‌رنگ‌تر، بسته به‌صورت پیش‌فرض. */
+  if (archivedItems.length && state.view !== 'prod') {
+    archivedItems.sort((a, b) => state.sort === 'desc' ? b.likes - a.likes : a.likes - b.likes);
+    html += `<div class="archivebox">
+      <button class="archivetoggle" id="archiveToggle" data-n="${archivedItems.length}">📦 آرشیوی‌ها (${faNum(archivedItems.length)}) — نمایش ▾</button>
+      <div id="archiveGrid" hidden><div class="grid">${archivedItems.map(cardHTML).join('')}</div></div>
+    </div>`;
+  }
   html += `</section>`;
   app.innerHTML = html;
   bindCardEvents(app);
 }
 
 function bindCardEvents(app) {
+  const at = app.querySelector('#archiveToggle');
+  if (at) {
+    at.addEventListener('click', () => {
+      const g = app.querySelector('#archiveGrid');
+      const open = g.hidden;
+      g.hidden = !open;
+      at.textContent = open
+        ? `📦 آرشیوی‌ها (${faNum(+at.dataset.n)}) — پنهان‌کردن ▴`
+        : `📦 آرشیوی‌ها (${faNum(+at.dataset.n)}) — نمایش ▾`;
+    });
+  }
   app.querySelectorAll('.viewtoggle button').forEach(btn => {
     btn.addEventListener('click', () => { state.view = btn.dataset.view; render(); });
   });
